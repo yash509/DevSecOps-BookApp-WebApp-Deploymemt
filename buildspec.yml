@@ -1,0 +1,39 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - export NODE_OPTIONS=--openssl-legacy-provider
+      - npm install
+
+  pre_build:
+    commands:
+      - echo "Logging into Docker registry..."
+      - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin docker.io
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - docker build -t "docker.io/$DOCKER_REGISTRY_USERNAME/bookapp-store" .
+      - echo "Pushing Docker image to registry..."
+      - docker push "docker.io/$DOCKER_REGISTRY_USERNAME/bookapp-store"
+
+  post_build:
+    commands:
+      - echo "Build completed successfully!"
+
+env:
+  parameter-store:
+    DOCKER_REGISTRY_USERNAME: /cloud-cicd/docker-credentials/username
+    DOCKER_REGISTRY_PASSWORD: /cloud-cicd/docker-credentials/password
+    DOCKER_REGISTRY_URL: /cloud-cicd/docker-registry/url
+
+artifacts:
+  files:
+    - public/**/*
+    - src/**/*
+    - package.json
+    - appspec.yml
+    - scripts/**/*
